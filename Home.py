@@ -5,13 +5,12 @@ st.set_page_config(layout="wide")
 
 # Customize the sidebar
 markdown = """
-A Streamlit map template
-<https://github.com/opengeos/streamlit-map-template>
+This map was developed in a collaboration with the CSIS Futures Lab and The Center for Industrial Base
 """
 
 st.sidebar.title("About")
+logo = "https://upload.wikimedia.org/wikipedia/commons/9/99/CSIS_logo_blue.svg"
 st.sidebar.info(markdown)
-logo = "https://i.imgur.com/UbOXYAU.png"
 st.sidebar.image(logo)
 
 # Customize page title
