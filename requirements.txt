@@ -1,5 +1,9 @@
---find-links=https://girder.github.io/large_image_wheels GDAL
-geopandas
-leafmap
+streamlit==1.50.0
+geopandas>=1.0
+leafmap==0.31.0
 owslib
-streamlit
+pyogrio
+pyproj
+shapely>=2.0
+pandas
+numpy
