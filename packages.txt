@@ -2,4 +2,3 @@ gdal-bin
 libgdal-dev
 libproj-dev
 libgeos-dev
-libspatialite-dev
