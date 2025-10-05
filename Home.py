@@ -44,6 +44,11 @@ unique_yards = shipyards["yard_unique_id"].unique()
 color_map = {
     yard_id: palette[i % len(palette)] for i, yard_id in enumerate(unique_yards)
 }
+buffers = buffers.rename(columns={
+    "yard_name": "Shipyard Name",
+    "state_coverage": "States Covered",
+    "county_coverage": "Counties Covered"
+})
 
 # --- Create interactive map ---
 m = leafmap.Map(minimap_control=True, draw_control=False)
@@ -60,12 +65,26 @@ for yard_id, color in color_map.items():
     yard_buffer = buffers[buffers["yard_unique_id"] == yard_id]
 
     # Buffer polygon, semi-transparent
+    # Buffer polygons with popups
     if not yard_buffer.empty:
-        m.add_gdf(
-            yard_buffer,
-            layer_name=f"{yard_id} Buffer",
-            style={"color": color, "fillColor": color, "fillOpacity": 0.25, "weight": 1},
-        )
+        for _, row in yard_buffer.iterrows():
+            popup_html = f"""
+            <b>{row['Shipyard Name']}</b><br><br>
+            <table style='width:220px;font-size:12px;background-color:rgba(255,255,255,0.9); border-radius:6px;'>
+                <tr><td><b>States Covered:</b></td><td>{row['States Covered']}</td></tr>
+                <tr><td><b>Counties Covered:</b></td><td>{row['Counties Covered']}</td></tr>
+            </table>
+            """
+            folium.GeoJson(
+                row["geometry"],
+                style_function=lambda x, color=color: {
+                    "color": color,
+                    "weight": 1.2,
+                    "fillOpacity": 0.25,
+                    "fillColor": color,
+                },
+                popup=folium.Popup(popup_html, max_width=250),
+            ).add_to(m)
 
     
     # Circle markers for yards
