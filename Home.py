@@ -67,20 +67,33 @@ for yard_id, color in color_map.items():
             style={"color": color, "fillColor": color, "fillOpacity": 0.25, "weight": 1},
         )
 
+    
     # Circle markers for yards
     if not yard_point.empty:
-        m.add_circle_markers_from_xy(
-            data=yard_point,
-            x="lon",
-            y="lat",
-            radius=5,
-            color=color,         # outline
-            fill_color=color,    # interior
-            fill_opacity=0.95,
-            weight=1,
-            popup=["Yard", "company_owner", "ownership_type"],
-            layer_name=f"{yard_id} Yard",
-        )
+        for _, row in yard_point.iterrows():
+            popup_html = f"""
+            <b>{row['Yard']}</b><br>
+            <i>{row['company_owner']}</i><br><br>
+            <table style='width:260px;font-size:12px;background-color:rgba(255,255,255,0.9); border-radius:6px;'>
+                <tr><td><b>Ownership Type:</b></td><td>{row['ownership_type']}</td></tr>
+                <tr><td><b>Builds Destroyers / Frigates:</b></td><td>{row['destroyers_or_frigates']}</td></tr>
+                <tr><td><b>Builds Aircraft Carriers:</b></td><td>{row['aircraft_carriers']}</td></tr>
+                <tr><td><b>Builds Submarines:</b></td><td>{row['submarines']}</td></tr>
+                <tr><td><b>Builds Small Craft / Aux:</b></td><td>{row['small_craft_or_aux']}</td></tr>
+                <tr><td><b>Has Coast Guard Contracts:</b></td><td>{row['coast_guard']}</td></tr>
+            </table>
+            """
+
+            folium.CircleMarker(
+                location=[row["lat"], row["lon"]],
+                radius=6,
+                color=color,
+                fill=True,
+                fill_color=color,
+                fill_opacity=0.9,
+                weight=1,
+                popup=folium.Popup(popup_html, max_width=300, min_width=200),
+            ).add_to(m)
 # --- Custom three-column legend ---
 legend_items = []
 for yard_id, color in color_map.items():
