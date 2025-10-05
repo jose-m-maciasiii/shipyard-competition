@@ -10,3 +10,4 @@ rioxarray
 xarray
 rasterio
 localtileserver
+psutil
