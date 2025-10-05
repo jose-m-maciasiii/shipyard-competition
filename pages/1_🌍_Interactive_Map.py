@@ -2,6 +2,7 @@ import streamlit as st
 import leafmap.foliumap as leafmap
 import geopandas as gpd
 import folium
+from folium.features import GeoJsonTooltip
 
 st.set_page_config(layout="wide")
 
@@ -45,7 +46,7 @@ cbp_options = [
     "Recruitment Radius Count"
 ]
 selected_col = st.sidebar.selectbox("Select CBP layer to visualize:", cbp_options, index=0)
-
+cbp[selected_col] = cbp[selected_col].fillna(0)
 # --- Define color palette ---
 palette = [
     "#E58606", "#5D69B1", "#52BCA3", "#99C945", "#CC61B0", "#24796C",
@@ -74,10 +75,34 @@ m.add_data(
     legend_title=selected_col,
     scheme="FisherJenks",
     k=5,
-    line_color="#e0e0e0",       # overrides the default blue outline
-    line_weight=0.4,            # outline thickness
-    style={"fillOpacity": 0.7}, # only control fill here
+    add_legend=True
 )
+
+# White outline-only layer on top of the choropleth
+folium.GeoJson(
+    data=cbp.to_json(),
+    name="County outlines",
+    style_function=lambda feat: {
+        "color": "#ffffff",    # outline color
+        "weight": 0.6,
+        "opacity": 1.0,
+        "fillColor": "#000000",
+        "fillOpacity": 0.0,    # no fill
+    },
+    tooltip=GeoJsonTooltip(
+        fields=["County Name", "State", "Unemployement Rate", "Median Worker Earnings"],
+        aliases=["County:", "State:", "Unemployment Rate:", "Median Earnings ($):"],
+        localize=True,
+        sticky=True,
+        labels=True,
+        style=(
+            "background-color: rgba(255, 255, 255, 0.8); "
+            "border-radius: 5px; padding: 4px;"
+        ),
+    ),
+    control=True,
+    show=True,
+).add_to(m)
 # --- Create feature groups ---
 fg_buffers = folium.FeatureGroup(name="Recruitment Radius", show=True)
 fg_shipyards = folium.FeatureGroup(name="Shipyard Locations", show=True)
