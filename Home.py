@@ -30,8 +30,8 @@ cbp_url = "https://f-lab-shipyard-competition.s3.amazonaws.com/clean_cbp_populat
 
 shipyards = gpd.read_file(shipyards_url)
 buffers = gpd.read_file(buffers_url)
-# (Make sure your files are publicly readable per the bucket policy)
 
+# (Make sure your files are publicly readable per the bucket policy)
 
 # --- Define color palette ---
 palette = [
