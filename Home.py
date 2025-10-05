@@ -1,7 +1,7 @@
 import streamlit as st
 import leafmap.foliumap as leafmap
 import geopandas as gpd
-
+import folium
 st.set_page_config(layout="wide")
 
 # Sidebar content
@@ -9,7 +9,7 @@ markdown = """
 County demographic data is from the U.S. Census American Community Survey, 2023 5 year estimates, Labor statistics is from the U.S. Beauru of Labor Statistics (BLS) using NAICS 336600.
 """
 
-st.sidebar.title("Data Sources")
+st.sidebar.title("Source")
 logo = "https://upload.wikimedia.org/wikipedia/commons/9/99/CSIS_logo_blue.svg"
 st.sidebar.info(markdown)
 st.sidebar.image(logo)
@@ -81,6 +81,59 @@ for yard_id, color in color_map.items():
             popup=["Yard", "company_owner", "ownership_type"],
             layer_name=f"{yard_id} Yard",
         )
+# --- Custom three-column legend ---
+legend_items = []
+for yard_id, color in color_map.items():
+    yard_name = shipyards.loc[
+        shipyards["yard_unique_id"] == yard_id, "Yard"
+    ].values[0]
+    legend_items.append(f"<div><span style='background:{color}'></span>{yard_name}</div>")
 
+# Split legend into 3 roughly equal columns
+n = len(legend_items)
+col_size = (n + 2) // 3  # divide into 3 columns
+col1 = "".join(legend_items[:col_size])
+col2 = "".join(legend_items[col_size: 2*col_size])
+col3 = "".join(legend_items[2*col_size:])
+
+legend_html = f"""
+<div style="
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    background-color: rgba(255, 255, 255, 0.45);
+    padding: 12px 18px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    max-height: 220px;
+    overflow-y: auto;
+    font-size: 13px;
+    width: 850px;
+">
+    <b style="display:block;text-align:center;margin-bottom:6px;">U.S. Shipyards</b>
+    <div style="display: flex; justify-content: space-between;">
+        <div style="flex: 1; margin-right: 10px;">{col1}</div>
+        <div style="flex: 1; margin-right: 10px;">{col2}</div>
+        <div style="flex: 1;">{col3}</div>
+    </div>
+    <style>
+        div span {{
+            display:inline-block;
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            border-radius: 3px;
+            vertical-align: middle;
+        }}
+        div div {{
+            margin-bottom: 3px;
+        }}
+    </style>
+</div>
+"""
+m.get_root().html.add_child(folium.Element(legend_html))
 st.subheader("U.S. Shipyards & Recruitment Radius")
+m.set_center(lon=-98.35, lat=39.5, zoom=5.2)
 m.to_streamlit(height=700)
