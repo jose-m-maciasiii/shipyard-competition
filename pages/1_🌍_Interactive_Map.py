@@ -174,105 +174,106 @@ tooltip_aliases = [
 ]
 
 # --- Build map ---
-m = leafmap.Map(minimap_control=True, locate_control=True)
-m.add_basemap("Stadia.AlidadeSmoothDark")
+with st.spinner("Loading interactive map..."):
+    m = leafmap.Map(minimap_control=True, locate_control=True)
+    m.add_basemap("Stadia.AlidadeSmoothDark")
 
-m.add_data(
-    cbp_classified,
-    column=selected_col,
-    layer_name=f"{selected_col} by County",
-    cmap="viridis",
-    legend_title=selected_col,
-    scheme="UserDefined",
-    classification_kwds={"bins": bins},
-    add_legend=True
-)
+    m.add_data(
+        cbp_classified,
+        column=selected_col,
+        layer_name=f"{selected_col} by County",
+        cmap="viridis",
+        legend_title=selected_col,
+        scheme="UserDefined",
+        classification_kwds={"bins": bins},
+        add_legend=True
+    )
 
-# Outline hover layer
-outline_layer = create_outline_layer(cbp, tooltip_fields, tooltip_aliases)
-outline_layer.add_to(m)
+    # Outline hover layer
+    outline_layer = create_outline_layer(cbp, tooltip_fields, tooltip_aliases)
+    outline_layer.add_to(m)
 
-# --- Shipyard layers ---
-palette = [
-    "#E58606", "#5D69B1", "#52BCA3", "#99C945", "#CC61B0", "#24796C",
-    "#DAA51B", "#2F8AC4", "#764E9F", "#ED645A", "#CC3A8E", "#A5AA99"
-]
-unique_yards = shipyards["yard_unique_id"].unique()
-color_map = {yard_id: palette[i % len(palette)] for i, yard_id in enumerate(unique_yards)}
+    # --- Shipyard layers ---
+    palette = [
+        "#E58606", "#5D69B1", "#52BCA3", "#99C945", "#CC61B0", "#24796C",
+        "#DAA51B", "#2F8AC4", "#764E9F", "#ED645A", "#CC3A8E", "#A5AA99"
+    ]
+    unique_yards = shipyards["yard_unique_id"].unique()
+    color_map = {yard_id: palette[i % len(palette)] for i, yard_id in enumerate(unique_yards)}
 
-fg_buffers = folium.FeatureGroup(name="Recruitment Radius", show=True)
-fg_shipyards = folium.FeatureGroup(name="Shipyard Locations", show=True)
+    fg_buffers = folium.FeatureGroup(name="Recruitment Radius", show=True)
+    fg_shipyards = folium.FeatureGroup(name="Shipyard Locations", show=True)
 
-shipyards["lon"] = shipyards.geometry.x
-shipyards["lat"] = shipyards.geometry.y
+    shipyards["lon"] = shipyards.geometry.x
+    shipyards["lat"] = shipyards.geometry.y
 
-for yard_id, color in color_map.items():
-    yard_point = shipyards[shipyards["yard_unique_id"] == yard_id]
-    yard_buffer = buffers[buffers["yard_unique_id"] == yard_id]
+    for yard_id, color in color_map.items():
+        yard_point = shipyards[shipyards["yard_unique_id"] == yard_id]
+        yard_buffer = buffers[buffers["yard_unique_id"] == yard_id]
 
-    # Buffers
-    for _, row in yard_buffer.iterrows():
-        popup_html = f"""
-        <b>{row['Shipyard Name']}</b><br><br>
-        <table style='width:220px;font-size:12px;background-color:rgba(255,255,255,0.9); border-radius:6px;'>
-            <tr><td><b>States Covered:</b></td><td>{row['States Covered']}</td></tr>
-            <tr><td><b>Counties Covered:</b></td><td>{row['Counties Covered']}</td></tr>
-        </table>
-        """
-        folium.GeoJson(
-            row["geometry"],
-            style_function=lambda x, color=color: {
-                "color": color,
-                "weight": 1.2,
-                "fillOpacity": 0.25,
-                "fillColor": color,
-            },
-            popup=folium.Popup(popup_html, max_width=250),
-        ).add_to(fg_buffers)
+        # Buffers
+        for _, row in yard_buffer.iterrows():
+            popup_html = f"""
+            <b>{row['Shipyard Name']}</b><br><br>
+            <table style='width:220px;font-size:12px;background-color:rgba(255,255,255,0.9); border-radius:6px;'>
+                <tr><td><b>States Covered:</b></td><td>{row['States Covered']}</td></tr>
+                <tr><td><b>Counties Covered:</b></td><td>{row['Counties Covered']}</td></tr>
+            </table>
+            """
+            folium.GeoJson(
+                row["geometry"],
+                style_function=lambda x, color=color: {
+                    "color": color,
+                    "weight": 1.2,
+                    "fillOpacity": 0.25,
+                    "fillColor": color,
+                },
+                popup=folium.Popup(popup_html, max_width=250),
+            ).add_to(fg_buffers)
 
-    # Markers
-    for _, row in yard_point.iterrows():
-        popup_html = f"""
-        <b>{row['Yard']}</b><br>
-        <i>{row['company_owner']}</i><br><br>
-        <table style='width:260px;font-size:12px;background-color:rgba(255,255,255,0.9); border-radius:6px;'>
-            <tr><td><b>Ownership Type:</b></td><td>{row['ownership_type']}</td></tr>
-            <tr><td><b>Builds Destroyers / Frigates:</b></td><td>{row['destroyers_or_frigates']}</td></tr>
-            <tr><td><b>Builds Aircraft Carriers:</b></td><td>{row['aircraft_carriers']}</td></tr>
-            <tr><td><b>Builds Submarines:</b></td><td>{row['submarines']}</td></tr>
-            <tr><td><b>Builds Small Craft / Aux:</b></td><td>{row['small_craft_or_aux']}</td></tr>
-            <tr><td><b>Has Coast Guard Contracts:</b></td><td>{row['coast_guard']}</td></tr>
-        </table>
-        """
-        folium.CircleMarker(
-            location=[row["lat"], row["lon"]],
-            radius=6,
-            color=color,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.9,
-            weight=1,
-            popup=folium.Popup(popup_html, max_width=300, min_width=200),
-        ).add_to(fg_shipyards)
+        # Markers
+        for _, row in yard_point.iterrows():
+            popup_html = f"""
+            <b>{row['Yard']}</b><br>
+            <i>{row['company_owner']}</i><br><br>
+            <table style='width:260px;font-size:12px;background-color:rgba(255,255,255,0.9); border-radius:6px;'>
+                <tr><td><b>Ownership Type:</b></td><td>{row['ownership_type']}</td></tr>
+                <tr><td><b>Builds Destroyers / Frigates:</b></td><td>{row['destroyers_or_frigates']}</td></tr>
+                <tr><td><b>Builds Aircraft Carriers:</b></td><td>{row['aircraft_carriers']}</td></tr>
+                <tr><td><b>Builds Submarines:</b></td><td>{row['submarines']}</td></tr>
+                <tr><td><b>Builds Small Craft / Aux:</b></td><td>{row['small_craft_or_aux']}</td></tr>
+                <tr><td><b>Has Coast Guard Contracts:</b></td><td>{row['coast_guard']}</td></tr>
+            </table>
+            """
+            folium.CircleMarker(
+                location=[row["lat"], row["lon"]],
+                radius=6,
+                color=color,
+                fill=True,
+                fill_color=color,
+                fill_opacity=0.9,
+                weight=1,
+                popup=folium.Popup(popup_html, max_width=300, min_width=200),
+            ).add_to(fg_shipyards)
 
-# --- Final map setup ---
-fg_buffers.add_to(m)
-fg_shipyards.add_to(m)
-folium.LayerControl(collapsed=False).add_to(m)
-m.fit_bounds(shipyards.total_bounds[[1, 0, 3, 2]].reshape(2, 2).tolist())
+    # --- Final map setup ---
+    fg_buffers.add_to(m)
+    fg_shipyards.add_to(m)
+    folium.LayerControl(collapsed=False).add_to(m)
+    m.fit_bounds(shipyards.total_bounds[[1, 0, 3, 2]].reshape(2, 2).tolist())
 
-# --- CSS Fix ---
-fix_css = """
-<style>
-.leaflet-control-layers {
-    max-height: 280px !important;
-    overflow-y: auto !important;
-    z-index: 9998 !important;
-}
-.leaflet-control-layers-expanded {
-    max-width: 220px !important;
-}
-</style>
-"""
-m.get_root().html.add_child(folium.Element(fix_css))
-m.to_streamlit(height=700)
+    # --- CSS Fix ---
+    fix_css = """
+    <style>
+    .leaflet-control-layers {
+        max-height: 280px !important;
+        overflow-y: auto !important;
+        z-index: 9998 !important;
+    }
+    .leaflet-control-layers-expanded {
+        max-width: 220px !important;
+    }
+    </style>
+    """
+    m.get_root().html.add_child(folium.Element(fix_css))
+    m.to_streamlit(height=700)
