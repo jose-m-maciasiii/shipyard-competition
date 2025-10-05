@@ -10,6 +10,7 @@ import numpy as np
 import tempfile
 import xarray as xr
 import os
+from folium import Element
 
 st.set_page_config(layout="wide")
 
@@ -181,7 +182,6 @@ with st.spinner("Rendering comparison map..."):
     </div>
     """
 
-    from folium import Element
     m.get_root().html.add_child(Element(left_legend_html))
     m.get_root().html.add_child(Element(right_legend_html))
 
