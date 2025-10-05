@@ -3,6 +3,9 @@ import leafmap.foliumap as leafmap
 import geopandas as gpd
 import folium
 from folium.features import GeoJsonTooltip
+import pandas as pd  
+import numpy as np
+import re
 
 st.set_page_config(layout="wide")
 
@@ -77,28 +80,91 @@ m.add_data(
     k=5,
     add_legend=True
 )
+# --- Dynamic tooltip fields and aliases ---
+tooltip_fields = [
+    "County Name",
+    "State",
+    selected_col,
+    "Recruitment Radius Count",
+    "Shipyards in Radius"
+]
+tooltip_aliases = [
+    "County:",
+    "State:",
+    f"{selected_col}:",
+    "Recruitment Radius (Shipyards):",
+    "Nearby Shipyards:"
+]
 
-# White outline-only layer on top of the choropleth
+# --- Optional: clean display formatting ---
+def format_value(val, col):
+    if pd.isna(val) or val == "":
+        return "N/A"
+    if "Rate" in col:
+        return f"{val:.1f}%"
+    elif "Earnings" in col or "Home Value" in col or "Rent" in col:
+        return f"${val:,.0f}"
+    elif isinstance(val, (int, float)):
+        return f"{val:,.0f}"
+    else:
+        return str(val)
+
+
+def format_shipyards_list(val):
+    """Convert comma-separated shipyard names into a clean HTML bullet list, 
+    preserving commas within legal suffixes like 'LLC' or 'Inc'."""
+    if pd.isna(val) or val == "":
+        return "None nearby"
+
+    # Split on commas NOT followed by LLC or Inc (case-insensitive)
+    yards = re.split(r", (?!LLC|Inc\b|inc\b|llc\b)", str(val).strip())
+
+    # Clean and filter blanks
+    yards = [y.strip() for y in yards if y.strip()]
+    if len(yards) == 0:
+        return "None nearby"
+
+    return (
+        "<ul style='margin:0; padding-left:16px; font-size:12px;'>"
+        + "".join([f"<li>{y}</li>" for y in yards])
+        + "</ul>"
+    )
+
+# --- Apply formatted text for tooltip display ---
+cbp_display = cbp.copy()
+
+# Apply normal formatting to numeric/text fields
+for col in tooltip_fields:
+    if col in cbp_display.columns and col != "Shipyards in Radius":
+        cbp_display[col] = cbp_display[col].apply(lambda v: format_value(v, col))
+
+# Apply bullet-list formatting only to the shipyards column
+if "Shipyards in Radius" in cbp_display.columns:
+    cbp_display["Shipyards in Radius"] = cbp_display["Shipyards in Radius"].apply(format_shipyards_list)
+
+# --- Add the white-outline hover layer ---
 folium.GeoJson(
-    data=cbp.to_json(),
+    data=cbp_display.to_json(),
     name="County outlines",
     style_function=lambda feat: {
-        "color": "#ffffff",    # outline color
+        "color": "#ffffff",
         "weight": 0.6,
         "opacity": 1.0,
         "fillColor": "#000000",
-        "fillOpacity": 0.0,    # no fill
+        "fillOpacity": 0.0,
     },
     tooltip=GeoJsonTooltip(
-        fields=["County Name", "State", "Unemployement Rate", "Median Worker Earnings"],
-        aliases=["County:", "State:", "Unemployment Rate:", "Median Earnings ($):"],
+        fields=tooltip_fields,
+        aliases=tooltip_aliases,
         localize=True,
         sticky=True,
         labels=True,
         style=(
-            "background-color: rgba(255, 255, 255, 0.8); "
-            "border-radius: 5px; padding: 4px;"
+            "background-color: rgba(255, 255, 255, 0.85); "
+            "border-radius: 5px; padding: 5px; "
+            "font-size: 12px; box-shadow: 0 0 3px rgba(0,0,0,0.2);"
         ),
+        max_width=350,
     ),
     control=True,
     show=True,
@@ -176,54 +242,7 @@ folium.LayerControl(collapsed=False).add_to(m)
 # --- Fit to bounds ---
 m.fit_bounds(shipyards.total_bounds[[1, 0, 3, 2]].reshape(2, 2).tolist())
 # --- Legend ---
-legend_items = []
-for yard_id, color in color_map.items():
-    yard_name = shipyards.loc[shipyards["yard_unique_id"] == yard_id, "Yard"].values[0]
-    legend_items.append(f"<div><span style='background:{color}'></span>{yard_name}</div>")
 
-n = len(legend_items)
-col_size = (n + 2) // 3
-col1 = "".join(legend_items[:col_size])
-col2 = "".join(legend_items[col_size:2*col_size])
-col3 = "".join(legend_items[2*col_size:])
-
-legend_html = f"""
-<div style="
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9999;
-    background-color: rgba(255, 255, 255, 0.55);
-    padding: 14px 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-    max-height: 240px;
-    overflow-y: auto;
-    font-size: 13px;
-    width: 880px;
-">
-    <b style="display:block;text-align:center;margin-bottom:6px;">U.S. Shipyards</b>
-    <div style="display: flex; justify-content: space-between;">
-        <div style="flex: 1; margin-right: 10px;">{col1}</div>
-        <div style="flex: 1; margin-right: 10px;">{col2}</div>
-        <div style="flex: 1;">{col3}</div>
-    </div>
-    <style>
-        div span {{
-            display:inline-block;
-            width: 14px;
-            height: 14px;
-            margin-right: 6px;
-            border-radius: 3px;
-            vertical-align: middle;
-        }}
-        div div {{
-            margin-bottom: 3px;
-        }}
-    </style>
-</div>
-"""
 # Fix layer control box size and stacking
 fix_css = """
 <style>
