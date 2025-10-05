@@ -18,18 +18,6 @@ st.sidebar.title("Source")
 logo = "https://upload.wikimedia.org/wikipedia/commons/9/99/CSIS_logo_blue.svg"
 st.sidebar.info(markdown)
 st.sidebar.image(logo)
-
-# --- Page title ---
-st.title("Shipbuilding Labor Market Indicators")
-
-st.markdown(
-    """
-    This map allows users to explore key labor and socioeconomic characteristics 
-    across U.S. counties relevant to shipbuilding. Use the dropdown menu to 
-    visualize indicators such as unemployment rate, worker earnings, or home values.
-    """
-)
-
 # --- Load data from S3 ---
 cbp_url = "https://f-lab-shipyard-competition.s3.amazonaws.com/clean_cbp_population_data.geojson"
 shipyards_url = "https://f-lab-shipyard-competition.s3.us-east-1.amazonaws.com/ship_yards_sf.gpkg"
@@ -48,7 +36,33 @@ cbp_options = [
     "Shipbuilders Employed",
     "Recruitment Radius Count"
 ]
-selected_col = st.sidebar.selectbox("Select CBP layer to visualize:", cbp_options, index=0)
+# --- Page title ---
+st.title("Shipbuilding Labor Market Indicators")
+
+st.markdown(
+    """
+    This map allows users to explore key labor and socioeconomic characteristics 
+    across U.S. counties relevant to shipbuilding. Use the dropdown menu below 
+    to visualize indicators such as unemployment rate, worker earnings, or home values.
+    """
+)
+
+# --- Centered dropdown ---
+st.markdown("### Select an Indicator to Visualize")
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    selected_col = st.selectbox(
+        "",
+        cbp_options,
+        index=0,
+        key="indicator_select"
+    )
+
+# Optional: show a small dynamic subtitle above the map
+st.markdown(
+    f"<h5 style='text-align:center; color:#6c757d;'>Currently viewing: <b>{selected_col}</b> by County</h5>",
+    unsafe_allow_html=True
+)
 cbp[selected_col] = cbp[selected_col].fillna(0)
 # --- Define color palette ---
 palette = [

@@ -4,3 +4,5 @@ leafmap
 owslib
 streamlit
 mapclassify
+pandas
+numpy
