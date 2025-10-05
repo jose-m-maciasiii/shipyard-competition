@@ -15,12 +15,11 @@ st.sidebar.info(markdown)
 st.sidebar.image(logo)
 
 # Page title
-st.title("Shipyard Competition Map")
+st.title("Shipbuilding Labor Competition")
 
 st.markdown(
     """
-    This interactive map displays key layers from the CSIS Shipyard Labor Competition project.
-    Data are sourced from pre-processed spatial datasets hosted on AWS S3.
+    As the United States begins to prioritze shipbuilding to meet the challenge of an agressive People's Republic of China (PRC), a key challenge it faces is a labor shortfall. This web based tool was design to highlight the labor competition shipbuilding firms will encounter in the short term as they prepare to scale production.
     """
 )
 
@@ -50,12 +49,17 @@ color_map = {
 m = leafmap.Map(minimap_control=True, draw_control=False)
 m.add_basemap("Stadia.AlidadeSmoothDark")
 
+# Precompute lon/lat once
+shipyards = shipyards.to_crs(4326)  # just in case
+shipyards["lon"] = shipyards.geometry.x
+shipyards["lat"] = shipyards.geometry.y
+
 # Loop through each yard and add its layers
 for yard_id, color in color_map.items():
     yard_point = shipyards[shipyards["yard_unique_id"] == yard_id]
     yard_buffer = buffers[buffers["yard_unique_id"] == yard_id]
 
-    # Add semi-transparent buffer polygon
+    # Buffer polygon, semi-transparent
     if not yard_buffer.empty:
         m.add_gdf(
             yard_buffer,
@@ -63,24 +67,20 @@ for yard_id, color in color_map.items():
             style={"color": color, "fillColor": color, "fillOpacity": 0.25, "weight": 1},
         )
 
-    # Add yard point as a circle marker
+    # Circle markers for yards
     if not yard_point.empty:
-        # Extract coordinates into separate columns
-        yard_point = yard_point.assign(
-            lon=yard_point.geometry.x,
-            lat=yard_point.geometry.y
-        )
-
-        m.add_points_from_xy(
+        m.add_circle_markers_from_xy(
             data=yard_point,
             x="lon",
             y="lat",
-            color=color,
-            radius=8,
+            radius=5,
+            color=color,         # outline
+            fill_color=color,    # interior
+            fill_opacity=0.95,
+            weight=1,
             popup=["Yard", "company_owner", "ownership_type"],
             layer_name=f"{yard_id} Yard",
         )
 
-# --- Render map in Streamlit ---
-st.subheader("U.S. Shipyards and Buffer Zones")
+st.subheader("U.S. Shipyards & Recruitment Radius")
 m.to_streamlit(height=700)
