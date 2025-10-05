@@ -46,8 +46,7 @@ cbp_options = [
 # --- UI layout ---
 st.title("⚓ Shipbuilding Labor Market Comparison")
 st.markdown("""
-Use the dropdowns below to compare two county-level indicators side by side.  
-Drag the slider on the map to visually compare differences across regions.
+Use the dropdowns below to compare two county-level indicators side by side by draging the slider to visually compare differences across regions.
 """)
 
 col1, col2 = st.columns(2)
@@ -135,7 +134,55 @@ with st.spinner("Rendering comparison map..."):
         "High": "#F0F921"
     }
 
-    m.add_legend(title=f"Left: {left_col}", legend_dict=viridis_legend)
-    m.add_legend(title=f"Right: {right_col}", legend_dict=plasma_legend)
+# --- Custom legends with real color gradients ---
+    left_legend_html = f"""
+    <div style="
+        position: fixed;
+        bottom: 40px;
+        left: 10px;
+        z-index: 9999;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px 14px;
+        border-radius: 6px;
+        box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        font-size: 13px;
+        line-height: 1.3;
+    ">
+    <b>◀ {left_col}</b><br>
+    <div style="height: 10px; width: 120px; 
+        background: linear-gradient(to right, #440154, #3b528b, #21918c, #5ec962, #fde725);
+        border-radius: 3px; margin-top: 5px;"></div>
+    <div style="display: flex; justify-content: space-between; font-size: 11px; color:#333;">
+    <span>Low</span><span>High</span>
+    </div>
+    </div>
+    """
+
+    right_legend_html = f"""
+    <div style="
+        position: fixed;
+        bottom: 40px;
+        right: 10px;
+        z-index: 9999;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px 14px;
+        border-radius: 6px;
+        box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        font-size: 13px;
+        line-height: 1.3;
+    ">
+    <b>{right_col} ▶</b><br>
+    <div style="height: 10px; width: 120px; 
+        background: linear-gradient(to right, #0d0887, #6a00a8, #b12a90, #e16462, #fca636, #f0f921);
+        border-radius: 3px; margin-top: 5px;"></div>
+    <div style="display: flex; justify-content: space-between; font-size: 11px; color:#333;">
+    <span>Low</span><span>High</span>
+    </div>
+    </div>
+    """
+
+    from folium import Element
+    m.get_root().html.add_child(Element(left_legend_html))
+    m.get_root().html.add_child(Element(right_legend_html))
 
     m.to_streamlit(height=700)
