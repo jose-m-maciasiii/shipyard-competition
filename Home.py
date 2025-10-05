@@ -6,7 +6,7 @@ st.set_page_config(layout="wide")
 
 # Sidebar content
 markdown = """
-The
+County demographic data is from the U.S. Census American Community Survey, 2023 5 year estimates, Labor statistics is from the U.S. Beauru of Labor Statistics (BLS) using NAICS 336600.
 """
 
 st.sidebar.title("Data Sources")
@@ -25,36 +25,62 @@ st.markdown(
 )
 
 # --- Load data from S3 ---
-# (Make sure your files are publicly readable per the bucket policy)
+shipyards_url = "https://f-lab-shipyard-competition.s3.us-east-1.amazonaws.com/ship_yards_sf.gpkg"
+buffers_url = "https://f-lab-shipyard-competition.s3.us-east-1.amazonaws.com/ship_yards_buffers_ll.gpkg"
 cbp_url = "https://f-lab-shipyard-competition.s3.amazonaws.com/clean_cbp_population_data.geojson"
-shipyards_url = "https://f-lab-shipyard-competition.s3.amazonaws.com/ship_yards_sf.gpkg"
-buffers_url = "https://f-lab-shipyard-competition.s3.amazonaws.com/ship_yards_buffers_ll.gpkg"
 
-@st.cache_data(show_spinner=True)
-def load_data():
-    try:
-        cbp = gpd.read_file(cbp_url)
-        shipyards = gpd.read_file(shipyards_url)
-        buffers = gpd.read_file(buffers_url)
-        return cbp, shipyards, buffers
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return None, None, None
+shipyards = gpd.read_file(shipyards_url)
+buffers = gpd.read_file(buffers_url)
+# (Make sure your files are publicly readable per the bucket policy)
 
-cbp, shipyards, buffers = load_data()
 
-# --- Initialize map ---
-m = leafmap.Map(center=[38.9, -77.03], zoom=4, minimap_control=True)
+# --- Define color palette ---
+palette = [
+    "#E58606", "#5D69B1", "#52BCA3", "#99C945", "#CC61B0", "#24796C",
+    "#DAA51B", "#2F8AC4", "#764E9F", "#ED645A", "#CC3A8E", "#A5AA99"
+]
 
-if cbp is not None:
-    m.add_gdf(cbp, layer_name="U.S. County Data", style={"color": "#3182bd"})
+# Assign each yard a unique color (loop if more yards than colors)
+unique_yards = shipyards["yard_unique_id"].unique()
+color_map = {
+    yard_id: palette[i % len(palette)] for i, yard_id in enumerate(unique_yards)
+}
 
-if shipyards is not None:
-    m.add_gdf(shipyards, layer_name="Shipyards", style={"color": "#e34a33", "fillColor": "#fb6a4a"})
-
-if buffers is not None:
-    m.add_gdf(buffers, layer_name="Recuritment Radius", style={"color": "#31a354", "fillOpacity": 0.2})
-
-# Add basemap and render map
+# --- Create interactive map ---
+m = leafmap.Map(minimap_control=True, draw_control=False)
 m.add_basemap("Stadia.AlidadeSmoothDark")
+
+# Loop through each yard and add its layers
+for yard_id, color in color_map.items():
+    yard_point = shipyards[shipyards["yard_unique_id"] == yard_id]
+    yard_buffer = buffers[buffers["yard_unique_id"] == yard_id]
+
+    # Add semi-transparent buffer polygon
+    if not yard_buffer.empty:
+        m.add_gdf(
+            yard_buffer,
+            layer_name=f"{yard_id} Buffer",
+            style={"color": color, "fillColor": color, "fillOpacity": 0.25, "weight": 1},
+        )
+
+    # Add yard point as a circle marker
+    if not yard_point.empty:
+        # Extract coordinates into separate columns
+        yard_point = yard_point.assign(
+            lon=yard_point.geometry.x,
+            lat=yard_point.geometry.y
+        )
+
+        m.add_points_from_xy(
+            data=yard_point,
+            x="lon",
+            y="lat",
+            color=color,
+            radius=8,
+            popup=["Yard", "company_owner", "ownership_type"],
+            layer_name=f"{yard_id} Yard",
+        )
+
+# --- Render map in Streamlit ---
+st.subheader("U.S. Shipyards and Buffer Zones")
 m.to_streamlit(height=700)
