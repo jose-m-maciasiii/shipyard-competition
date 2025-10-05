@@ -78,43 +78,47 @@ right_data, _ = classify_data(cbp, right_col)
 
 # --- Rasterization helper ---
 def rasterize_indicator(gdf, column, resolution=0.1):
+    """Rasterize vector data to an in-memory xarray raster, clipped to boundaries."""
     gdf = gdf.to_crs(4326)
-    bounds = gdf.total_bounds  # [minx, miny, maxx, maxy]
-    width = int((bounds[2] - bounds[0]) / resolution)
-    height = int((bounds[3] - bounds[1]) / resolution)
-    transform = from_bounds(*bounds, width, height)
+    bounds = gdf.total_bounds
+    xres = int((bounds[2] - bounds[0]) / resolution)
+    yres = int((bounds[3] - bounds[1]) / resolution)
+
+    transform = from_bounds(*bounds, xres, yres)
     shapes = [(geom, val) for geom, val in zip(gdf.geometry, gdf[column])]
+
     raster = rasterize(
         shapes,
-        out_shape=(height, width),
+        out_shape=(yres, xres),
         transform=transform,
         fill=np.nan,
         dtype="float32",
     )
+
     da = xr.DataArray(
         raster,
         dims=("y", "x"),
         coords={
-            "y": np.linspace(bounds[3], bounds[1], height),
-            "x": np.linspace(bounds[0], bounds[2], width),
+            "y": np.linspace(bounds[3], bounds[1], raster.shape[0]),
+            "x": np.linspace(bounds[0], bounds[2], raster.shape[1]),
         },
         attrs={"transform": transform, "crs": "EPSG:4326"},
     )
     return da
 
 # --- Create xarrays for both indicators ---
-left_da = rasterize_indicator(left_data, left_col)
-right_da = rasterize_indicator(right_data, right_col)
+left_raster = rasterize_indicator(left_data, left_col)
+right_raster = rasterize_indicator(right_data, right_col)
 
 # --- Split map with DataArrays ---
 with st.spinner("Rendering comparison map..."):
     m = leafmap.Map(center=[37.8, -96], zoom=4, minimap_control=True)
 
     m.split_map(
-        left_da,
-        right_da,
-        left_args={"layer_name": left_col, "colormap": "viridis"},
-        right_args={"layer_name": right_col, "colormap": "plasma"},
+    left_raster,
+    right_raster,
+    left_args={"layer_name": f"{left_col}", "colormap": "viridis"},
+    right_args={"layer_name": f"{right_col}", "colormap": "plasma"},
     )
 
     # Simple three-step color legend approximating viridis
