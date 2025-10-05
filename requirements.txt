@@ -6,3 +6,6 @@ streamlit
 mapclassify
 pandas
 numpy
+rioxarray
+xarray
+rasterio
