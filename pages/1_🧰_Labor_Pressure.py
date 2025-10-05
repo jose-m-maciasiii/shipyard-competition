@@ -54,7 +54,7 @@ cbp_options = [
 ]
 
 # --- Page title ---
-st.title("Shipbuilding Labor Market Indicators")
+st.title("Labor Market Pressure Indicators")
 
 st.markdown(
     """
