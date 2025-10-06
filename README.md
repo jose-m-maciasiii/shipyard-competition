@@ -1,16 +1,11 @@
-# streamlit-map-template
+# Shipbuilding Labor Competition
 
-A streamlit template for mapping applications. It can be deployed to [Streamlit Cloud](https://streamlit.io/cloud).
+This github repo contains the scripts used to develop the CSIS Shipbuilding Competition tool. The data was pre-processed by researchers at CSIS - Futures Lab before being put on display here.
 
-Web App URL: <https://map-template.streamlit.app>
+Data Sources:
 
-## Instructions
+-   United States Census Bureau
+-   United States Bureau Labor Statistics (BLS)
+-   Open source mapping for shipyard locations
 
-1. For the GitHub repository or use it as a template for your own project.
-2. Customize the sidebar by changing the sidebar text and logo in each Python file.
-3. Find your favorite emoji from https://emojipedia.org.
-4. Add a new app to the `pages/` directory with an emoji in the file name, e.g., 1_🚀_Chart.py.
-
-## Demo
-
-![](https://i.imgur.com/6lj0oAO.png)
+The location data is offsetted at times due to how builders labeled their offices, sometimes they are on streets out of privacy concerns. The shipyard data and the concept for this project was born out of collection with the CSIS Center for Industrial Base's [Henry H. Carroll](https://www.csis.org/people/henry-h-carroll) and Futures Lab's [Jose M. Macias.](https://www.csis.org/people/jose-m-macias-iii)

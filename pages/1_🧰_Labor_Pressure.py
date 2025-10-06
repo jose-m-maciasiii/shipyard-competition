@@ -276,4 +276,17 @@ with st.spinner("Loading interactive map..."):
     </style>
     """
     m.get_root().html.add_child(folium.Element(fix_css))
+# --- Move the legend above the minimap ---
+    legend_css = """
+    <style>
+    .leaflet-control.legend.leaflet-control {
+        position: absolute !important;
+        bottom: 180px !important;   /* raise legend above the minimap */
+        right: 10px !important;     /* keep it aligned with minimap edge */
+        transform: none !important; /* reset any previous translate shifts */
+        z-index: 9999 !important;
+    }
+    </style>
+    """
+    m.get_root().html.add_child(folium.Element(legend_css))
     m.to_streamlit(height=700)
