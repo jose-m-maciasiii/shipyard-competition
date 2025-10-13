@@ -84,22 +84,31 @@ st.markdown(
 )
 
 # --- Helper to load and classify raster ---
+import requests
+from rasterio.io import MemoryFile
+
 @st.cache_data(show_spinner=False)
 def load_and_classify(url, label):
-    """Load a raster from S3 and apply Jenks/Quantile/manual classification."""
-    da = rioxarray.open_rasterio(url).squeeze()
-    vals = da.values[~np.isnan(da.values)]
+    """Load a raster from S3 or HTTPS and apply Jenks/Quantile/manual classification."""
+    # --- fetch raster from remote URL safely ---
+    r = requests.get(url, stream=True)
+    r.raise_for_status()
+    with MemoryFile(r.content) as memfile:
+        with memfile.open() as src:
+            da = rioxarray.open_rasterio(src).squeeze()
 
-    settings = COLOR_SETTINGS.get(label, {"palette": ["#f7fbff", "#6baed6", "#08519c"], "classes": 6, "method": "linear"})
+    vals = da.values[~np.isnan(da.values)]
+    settings = COLOR_SETTINGS.get(label, {
+        "palette": ["#f7fbff", "#6baed6", "#08519c"],
+        "classes": 6, "method": "linear"
+    })
     method = settings["method"]
     n_classes = settings["classes"]
 
     if method == "jenks" and len(np.unique(vals)) >= 3:
-        classifier = mapclassify.NaturalBreaks(vals, k=n_classes)
-        bins = classifier.bins.tolist()
+        bins = mapclassify.NaturalBreaks(vals, k=n_classes).bins.tolist()
     elif method == "quantile":
-        classifier = mapclassify.Quantiles(vals, k=n_classes)
-        bins = classifier.bins.tolist()
+        bins = mapclassify.Quantiles(vals, k=n_classes).bins.tolist()
     elif method == "manual" and "bins" in settings:
         bins = settings["bins"]
     else:
