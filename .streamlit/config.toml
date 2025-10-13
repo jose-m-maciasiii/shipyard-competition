@@ -1,0 +1,7 @@
+[theme]
+base="material"                  # or try "light" for bright white
+primaryColor="#2F8AC4"           # Futures Lab blue
+backgroundColor="#F7F9FC"        # very light gray-blue
+secondaryBackgroundColor="#E6EBF2"
+textColor="#0E1117"
+font="sans serif"

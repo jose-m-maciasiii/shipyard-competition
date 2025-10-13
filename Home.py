@@ -9,24 +9,6 @@ import mapclassify
 
 st.set_page_config(layout="wide")
 
-# --- Sidebar ---
-st.sidebar.markdown("### 🧾 Data Sources")
-st.sidebar.markdown(
-    """
-    County demographic data are from the **U.S. Census American Community Survey (2023, 5-year estimates)**.  
-    Labor statistics are from the **U.S. Bureau of Labor Statistics (BLS)**, NAICS **336600**.
-    """
-)
-st.sidebar.divider()  # adds a subtle gray rule for structure
-st.sidebar.markdown("#### 📍 About This Tool")
-st.sidebar.caption(
-    "Developed by the CSIS **Futures Lab**, this visualization explores how labor availability "
-    "affects U.S. shipyard capacity and recruitment competition."
-)
-st.sidebar.image(
-    "https://upload.wikimedia.org/wikipedia/commons/9/99/CSIS_logo_blue.svg",
-    use_container_width=True,
-)
 # Page title
 st.title("The Fight for Shipyard Labor: Exploring Regional Workforce Pressures")
 
@@ -196,45 +178,75 @@ with left_col:
     st.markdown("#### Fast Labor Market Highlights")
 
     if selected_yards:
-        c1, c2, c3 = st.columns(3)
+        # --- Create a 2x2 layout: top row 2 cards, bottom row 1 centered card ---
+        top_row = st.columns(2)
+        bottom_row = st.columns([0.25, 0.5, 0.25])  # center the last card visually
 
-        # Highest unemployment (max)
+        # --- Smaller CSS to help fit longer text ---
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stMetric"] {
+                background-color: rgba(240, 240, 240, 0.65);
+                border-radius: 10px;
+                padding: 0.35rem 0.6rem !important;
+                margin: 0.25rem;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+                min-height: 72px !important;
+            }
+            [data-testid="stMetricLabel"] {
+                font-size: 12px !important;
+                line-height: 1.15em !important;
+                white-space: normal !important;
+                text-overflow: clip !important;
+                overflow: visible !important;
+            }
+            [data-testid="stMetricValue"] {
+                font-size: 17px !important;
+                font-weight: 600 !important;
+                white-space: nowrap !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # --- Metrics ---
+        # Highest unemployment (top-left)
         if not cbp_view.empty and "Unemployement Rate" in cbp_view:
             row = cbp_view.loc[cbp_view["Unemployement Rate"].idxmax()]
-            c1.metric(
+            top_row[0].metric(
                 "Highest Unemployment",
                 f"{row['County Name']}, {row['State']}",
-                f"{row['Unemployement Rate']:.1%}"
+                f"{row['Unemployement Rate']:.1%}",  # ✅ auto-multiplies by 100 for display
             )
         else:
-            c1.metric("Highest Unemployment", "—", "—")
+            top_row[0].metric("Highest Unemployment", "—", "—")
 
-        # Lowest Median Rent Paid
+        # Lowest Median Rent Paid (top-right)
         if not cbp_view.empty and "Median Rent Paid" in cbp_view:
             row = cbp_view.loc[cbp_view["Median Rent Paid"].idxmin()]
-            c2.metric(
+            top_row[1].metric(
                 "Lowest Median Rent",
                 f"{row['County Name']}, {row['State']}",
-                f"${row['Median Rent Paid']:,.0f}/mo"
+                f"${row['Median Rent Paid']:,.0f}/mo",
             )
         else:
-            c2.metric("Lowest Median Rent", "—", "—")
+            top_row[1].metric("Lowest Median Rent", "—", "—")
 
-        # Lowest Median Worker Earnings
+        # Lowest Median Worker Earnings (bottom center)
         if not cbp_view.empty and "Median Worker Earnings" in cbp_view:
             row = cbp_view.loc[cbp_view["Median Worker Earnings"].idxmin()]
-            c3.metric(
+            bottom_row[1].metric(
                 "Lowest Median Earnings",
                 f"{row['County Name']}, {row['State']}",
-                f"${row['Median Worker Earnings']:,.0f}/yr"
+                f"${row['Median Worker Earnings']:,.0f}/yr",
             )
         else:
-            c3.metric("Lowest Median Earnings", "—", "—")
+            bottom_row[1].metric("Lowest Median Earnings", "—", "—")
 
     else:
-        st.caption(
-            "👆 Select one or more shipyards to view county-level metrics within their recruitment radii."
-        )
+        st.caption("👆 Select one or more shipyards to view county-level metrics within their recruitment radii.")
 
 # ---------- Competition panel ----------
 st.divider()
@@ -254,6 +266,7 @@ if selected_yards:
     )
 
     # Build the summary table (but do not render yet)
+    cbp_view["Unemployement Rate"] = cbp_view["Unemployement Rate"] * 100
     tbl = (
         cbp_view[
             [
@@ -688,6 +701,7 @@ if selected_yards and tbl is not None:
                 "Unemployment Rate",
                 format="%.1f %%",
                 width="small",
+                help="County unemployment rate (percent)",
             ),
             "Worker Earnings ($/yr)": st.column_config.NumberColumn(
                 "Median Worker Earnings",
@@ -726,3 +740,15 @@ if selected_yards and tbl is not None:
         ],
         key="county_comp_table"
     )
+
+    # ---------- FOOTER ----------
+st.divider()
+st.image(
+    "https://f-lab-shipyard-competition.s3.us-east-1.amazonaws.com/DS_Color.png",
+    use_container_width=False,
+    width=220,
+)
+st.markdown("#### 📍 About This Tool")
+st.caption(
+    "Developed by Jose M. Macias at the **CSIS Futures Lab**, County demographic data are from the **U.S. Census American Community Survey (2023, 5-year estimates)**. Labor statistics are from the **U.S. Bureau of Labor Statistics (BLS)**, NAICS **336600**. Shipyard Location and BLS NAIC sourced by Henry H. Carroll at the **CSIS Center for Industrial Base**"
+)
