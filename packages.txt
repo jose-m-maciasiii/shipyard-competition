@@ -1,3 +1,4 @@
+# Minimal geospatial stack for Streamlit Cloud (no ODBC conflicts)
 gdal-bin
 libgdal-dev
 libgeos-dev
