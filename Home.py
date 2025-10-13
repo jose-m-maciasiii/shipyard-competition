@@ -31,17 +31,14 @@ st.sidebar.image(
 st.title("The Fight for Shipyard Labor: Exploring Regional Workforce Pressures")
 
 st.markdown("""
-This interactive tool supports analysis of the **U.S. shipbuilding workforce gap**—one of the most
-pressing challenges in revitalizing the Maritime Industrial Base (MIB).  
-Drawing on data from the U.S. Census and Bureau of Labor Statistics, the map highlights:
+This tool explores one of the central barriers to scaling U.S. seapower: **the fragmented and shrinking shipyard workforce**.  
+Using geospatial data from the Census and Bureau of Labor Statistics, it identifies:
 
-- **Where** shipyards compete for limited skilled labor within 90-mile recruitment zones,  
-- **How** regional factors such as unemployment, wages, and housing costs shape recruitment, and  
-- **Which** counties may offer untapped potential for workforce expansion.
+- Where shipyards **compete** for labor within shared 90-mile hiring zones,  
+- How unemployment, wages, and housing costs **constrain or enable recruitment**, and  
+- Which counties may serve as **low-cost, high-potential talent zones** for the Maritime Industrial Base (MIB).
 
-Designed for policymakers and industry planners, the visualization helps identify opportunities
-to **coordinate recruitment efforts** and **minimize inter-shipyard competition** as the United States
-ramps up shipbuilding production.
+Built for policymakers and industry leaders, this dashboard supports smarter coordination to avoid **redundant or wasteful recruitment efforts** across the defense industrial base.
 """)
 
 # --- Data sources on S3 ---
@@ -196,7 +193,7 @@ with left_col:
         """,
         unsafe_allow_html=True
     )
-    st.markdown("#### Quick snapshot")
+    st.markdown("#### Fast Labor Market Highlights")
 
     if selected_yards:
         c1, c2, c3 = st.columns(3)
@@ -239,13 +236,12 @@ with left_col:
             "👆 Select one or more shipyards to view county-level metrics within their recruitment radii."
         )
 
-   # ---------- Competition panel ----------
 # ---------- Competition panel ----------
 st.divider()
 
 if selected_yards:
     shipyard_names_str = ", ".join(selected_yards)
-    st.markdown(f"#### Recruitment Competition for **{shipyard_names_str}**")
+    st.markdown(f"#### Labor Market Congestion for **{shipyard_names_str}**")
 
     # Identify overlaps
     all_sets = cbp_view["__yards_set"].tolist()
@@ -253,7 +249,7 @@ if selected_yards:
     competitors = sorted(y for y in others if y not in set(selected_yards))
 
     st.markdown(
-        f"**Shipyards overlapping** the chosen radii: "
+        f"**Shipyards Competing for Overlapping Talent Pools**: "
         f"{(', '.join(competitors)) if competitors else 'None'}"
     )
 
@@ -287,12 +283,12 @@ if selected_yards:
     )
 
 else:
-    st.markdown("#### Recruitment Competition")
+    st.markdown("#### Labor Market Congestion")
     st.caption("👆 Select one or more shipyards to explore competition among overlapping recruitment radii.")
 
     # ---------- RIGHT: map ----------
 with right_col:
-        st.markdown("### Interactive Map")
+        st.markdown("### Strategic Workforce Map: Labor Availability, Cost, and Competition")
     # Wrap your existing map-building code into a function so we can pass the indicator
         def build_map(indicator_label):
             # --- Build the map (always) ---
@@ -648,10 +644,10 @@ with right_col:
 # ---------- Full-width competition table ----------
 if selected_yards and tbl is not None:
     if len(selected_yards) == 1:
-        header_label = f"County Overview: {selected_yards[0]}"
+        header_label = f"Recruitment Terrain Snapshot: {selected_yards[0]}"
     else:
         header_label = f"County Overview for Selected Shipyards ({len(selected_yards)})"
-    st.markdown(f"### 🧭 {header_label}")
+    st.markdown(f"### {header_label}")
 
     # --- Optional style polish ---
     st.markdown(
