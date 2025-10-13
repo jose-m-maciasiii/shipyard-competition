@@ -27,14 +27,21 @@ st.sidebar.image(
     use_container_width=True,
 )
 # Page title
-st.title("Inter-Shipyard Labor Competition")
+st.title("The Fight for Shipyard Labor: Exploring Regional Workforce Pressures")
 
-st.markdown(
-    """
-    As the United States begins to prioritize shipbuilding to meet the challenge of an aggressive PRC, a key constraint is labor.
-    This tool shows county-level labor indicators alongside U.S. shipyards and their recruitment radii.
-    """
-)
+st.markdown("""
+This interactive tool supports analysis of the **U.S. shipbuilding workforce gap**—one of the most
+pressing challenges in revitalizing the Maritime Industrial Base (MIB).  
+Drawing on data from the U.S. Census and Bureau of Labor Statistics, the map highlights:
+
+- **Where** shipyards compete for limited skilled labor within 90-mile recruitment zones,  
+- **How** regional factors such as unemployment, wages, and housing costs shape recruitment, and  
+- **Which** counties may offer untapped potential for workforce expansion.
+
+Designed for policymakers and industry planners, the visualization helps identify opportunities
+to **coordinate recruitment efforts** and **minimize inter-shipyard competition** as the United States
+ramps up shipbuilding production.
+""")
 
 # --- Data sources on S3 ---
 shipyards_url = "https://f-lab-shipyard-competition.s3.us-east-1.amazonaws.com/ship_yards_sf.gpkg"
