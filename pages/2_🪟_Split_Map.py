@@ -86,16 +86,31 @@ st.markdown(
 # --- Helper to load and classify raster ---
 @st.cache_data(show_spinner=False)
 def load_and_classify(url, label):
-    """Load a raster from S3 and apply Jenks/Quantile/manual classification with transparent NaNs."""
-    da = rioxarray.open_rasterio(url).squeeze()
+    """Load raster from S3, crop to valid data extent, and apply classification."""
+    import rioxarray
+    import rasterio
+    import numpy as np
+    import mapclassify
 
-    # 🔧 Make NaN values transparent instead of white fill
-    da = da.where(~np.isnan(da), other=np.nan)
-    da.rio.write_nodata(np.nan, inplace=True)
+    # Load masked raster
+    da = rioxarray.open_rasterio(url, masked=True).squeeze()
 
-    # Proceed with classification as before
+    # 🧭 Find valid pixels and crop raster metadata to match data bounds
+    mask = ~np.isnan(da.values)
+    if np.any(mask):
+        ys, xs = np.where(mask)
+        xmin, xmax = da.x.values[xs].min(), da.x.values[xs].max()
+        ymin, ymax = da.y.values[ys].min(), da.y.values[ys].max()
+        da = da.rio.clip_box(minx=xmin, miny=ymin, maxx=xmax, maxy=ymax)
+
+    # 🪶 Make sure missing data are transparent
+    nodata_value = -9999
+    da = da.fillna(nodata_value)
+    da.rio.write_nodata(nodata_value, inplace=True)
+    da = da.where(da != nodata_value)
+
+    # --- Classification ---
     vals = da.values[~np.isnan(da.values)]
-
     settings = COLOR_SETTINGS.get(
         label, {"palette": ["#f7fbff", "#6baed6", "#08519c"], "classes": 6, "method": "linear"}
     )
