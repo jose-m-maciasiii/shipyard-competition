@@ -87,16 +87,20 @@ st.markdown(
 import requests
 from rasterio.io import MemoryFile
 
-@st.cache_data(show_spinner=False)
 def load_and_classify(url, label):
-    """Load a raster from S3 or HTTPS and apply Jenks/Quantile/manual classification."""
-    # --- fetch raster from remote URL safely ---
-    r = requests.get(url, stream=True)
-    r.raise_for_status()
-    with MemoryFile(r.content) as memfile:
-        with memfile.open() as src:
-            da = rioxarray.open_rasterio(src).squeeze()
+    """Load a raster from S3 or HTTPS (no caching) and apply Jenks/Quantile/manual classification."""
+    # --- Download and read raster safely ---
+    try:
+        resp = requests.get(url, stream=True, timeout=30)
+        resp.raise_for_status()
+        with MemoryFile(resp.content) as memfile:
+            with memfile.open() as src:
+                da = rioxarray.open_rasterio(src).squeeze()
+    except Exception as e:
+        st.error(f"❌ Failed to load {label}: {e}")
+        return None, None, None
 
+    # --- Clean + classify ---
     vals = da.values[~np.isnan(da.values)]
     settings = COLOR_SETTINGS.get(label, {
         "palette": ["#f7fbff", "#6baed6", "#08519c"],
@@ -104,6 +108,10 @@ def load_and_classify(url, label):
     })
     method = settings["method"]
     n_classes = settings["classes"]
+
+    if len(vals) < 10:
+        st.warning(f"⚠️ {label} raster has very few valid values.")
+        return da, None, settings["palette"]
 
     if method == "jenks" and len(np.unique(vals)) >= 3:
         bins = mapclassify.NaturalBreaks(vals, k=n_classes).bins.tolist()
