@@ -186,3 +186,104 @@ with st.spinner("Rendering comparison map..."):
     m.get_root().html.add_child(Element(right_legend_html))
 
     m.to_streamlit(height=700)
+
+
+
+
+
+import geopandas as gpd
+import numpy as np
+import xarray as xr
+import rasterio
+from rasterio.features import rasterize
+from rasterio.transform import from_bounds
+from rasterio.mask import mask
+import rioxarray
+
+# --- Load CBP data ---
+cbp = gpd.read_file(
+    "https://f-lab-shipyard-competition.s3.amazonaws.com/clean_cbp_population_data.geojson"
+).to_crs(4326)
+
+indicators = [
+    "Unemployement Rate",
+    "Median Worker Earnings",
+    "Median Home Value",
+    "Median Rent Paid",
+    "Shipbuilders Employed",
+    "Recruitment Radius Count",
+]
+
+# --- Rasterization function ---
+def make_highres_raster(gdf, column, res_deg=0.02, out_path=None):
+    """Rasterize vector data at high resolution and save to GeoTIFF."""
+    bounds = gdf.total_bounds
+    xres = int((bounds[2] - bounds[0]) / res_deg)
+    yres = int((bounds[3] - bounds[1]) / res_deg)
+    transform = from_bounds(*bounds, xres, yres)
+
+    shapes = [(geom, float(val)) for geom, val in zip(gdf.geometry, gdf[column])]
+    raster = rasterize(
+        shapes,
+        out_shape=(yres, xres),
+        transform=transform,
+        fill=np.nan,
+        dtype="float32",
+    )
+
+    da = xr.DataArray(
+        raster,
+        dims=("y", "x"),
+        coords={
+            "y": np.linspace(bounds[3], bounds[1], yres),
+            "x": np.linspace(bounds[0], bounds[2], xres),
+        },
+        attrs={"transform": transform, "crs": "EPSG:4326"},
+    )
+
+    if out_path:
+        da.rio.write_crs("EPSG:4326", inplace=True)
+        da.rio.to_raster(
+            out_path,
+            compress="LZW",
+            tiled=True,
+            dtype="float32",
+        )
+        print(f"✅ Saved raster: {out_path}")
+
+    return out_path
+
+
+# --- Clipping function ---
+def crop_to_counties(in_tif, gdf, out_tif):
+    """Clip raster tightly to county geometries."""
+    with rasterio.open(in_tif) as src:
+        out_img, out_transform = mask(src, gdf.geometry, crop=True, filled=True, nodata=np.nan)
+        meta = src.meta.copy()
+        meta.update({
+            "driver": "GTiff",
+            "height": out_img.shape[1],
+            "width": out_img.shape[2],
+            "transform": out_transform,
+            "compress": "LZW",
+            "tiled": True,
+            "dtype": "float32",
+            "nodata": np.nan,
+        })
+
+    with rasterio.open(out_tif, "w", **meta) as dst:
+        dst.write(out_img)
+    print(f"✂️ Clipped and saved: {out_tif}")
+
+
+# --- Generate + clip all rasters ---
+for col in indicators:
+    safe = col.lower().replace(" ", "_").replace("/", "_")
+    raw_out = f"raster_{safe}.tif"
+    clipped_out = f"raster_{safe}_clipped.tif"
+
+    # Step 1: rasterize
+    make_highres_raster(cbp, col, res_deg=0.02, out_path=raw_out)
+
+    # Step 2: clip to U.S. counties
+    crop_to_counties(raw_out, cbp, clipped_out)
