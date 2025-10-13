@@ -1,13 +1,14 @@
---find-links=https://girder.github.io/large_image_wheels GDAL
-geopandas
-leafmap
+# ✅ clean working requirements for Streamlit Cloud (GDAL-safe)
+
+geopandas>=0.14.3
+leafmap>=0.30.0
 owslib
-streamlit
-mapclassify
+streamlit>=1.32.0
+mapclassify>=2.6.0
 pandas
 numpy
-rioxarray
+rioxarray>=0.15.0
 xarray
-rasterio
-localtileserver
+rasterio>=1.3.9
+localtileserver>=0.8.3
 psutil
