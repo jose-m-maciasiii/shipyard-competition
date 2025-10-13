@@ -1,4 +1,4 @@
---find-links=https://girder.github.io/large_image_wheels GDAL
+
 geopandas
 leafmap
 owslib
@@ -11,9 +11,3 @@ xarray
 rasterio
 localtileserver
 psutil
-
-rasterio>=1.3.9
-rioxarray>=0.15.0
-leafmap>=0.30.0
-mapclassify>=2.6.0
-geopandas>=0.14.3
