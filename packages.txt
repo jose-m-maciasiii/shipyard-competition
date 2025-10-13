@@ -1,5 +1,10 @@
-gdal-bin
-libgdal-dev
-libgeos-dev
-libproj-dev
-libspatialindex-dev
+# clean geospatial deps, skip ODBC conflicts
+apt-get update
+apt-get install -y --no-install-recommends \
+  gdal-bin \
+  libgdal-dev \
+  libgeos-dev \
+  libproj-dev \
+  libspatialindex-dev
+apt-get clean
+rm -rf /var/lib/apt/lists/*
